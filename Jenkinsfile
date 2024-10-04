@@ -15,6 +15,13 @@ pipeline {
     }
 
     stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/ymkgithub/jenkins-aws-secrets.git' // Your Git repository
+            }
+        }
+
         stage('Terraform Init & Plan') {
             steps {
                 withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
