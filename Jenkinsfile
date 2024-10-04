@@ -28,7 +28,7 @@ pipeline {
                     script {
                         def secretId = "${TF_ENV}/drupal/secrets"
                         sh """
-                            aws secretsmanager get-secret-value --secret-id ${secretId} --query SecretString --output text > terraform-${TF_ENV}.tfvars
+                            aws secretsmanager get-secret-value --secret-id ${secretId} --query SecretString --output text > terraform-${TF_ENV}.json
                         """
                     }
                 }
