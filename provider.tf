@@ -13,7 +13,7 @@ terraform {
   }
   backend "s3" {
     bucket = "mahesh-cw-todo-app"
-    key    = "mahesh-aws-secrets/terraform.tfstate"
+    key    = "mahesh-aws-secrets"
     region = "us-west-2"
   }
 }
