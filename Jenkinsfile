@@ -35,12 +35,28 @@ pipeline {
             }
         }
 
-        stage('Terraform Init & Plan') {
+        stage('Terraform Init') {
+            when {
+                expression {
+                    return !params.DESTROY
+                }
+            }
             steps {
                 withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     script {
                         sh """
                             terraform init
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('workspace selection') {
+            steps {
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    script {
+                        sh """
                             terraform workspace select ${TF_ENV} || terraform workspace new ${TF_ENV}
                             terraform validate
                         """
@@ -49,9 +65,12 @@ pipeline {
             }
         }
 
-
-
         stage('Terraform Plan') {
+            when {
+                expression {
+                    return !params.DESTROY
+                }
+            }
             steps {
                 script {
                     sh """
@@ -63,6 +82,11 @@ pipeline {
         }
 
         stage('Plan Confirmation') {
+            when {
+                expression {
+                    return !params.DESTROY
+                }
+            }
             steps {
                 script {
                     def userInput = input(
@@ -93,6 +117,22 @@ pipeline {
             }
         }
 
+        // Plan for destroy
+        stage('Terraform Plan (Destroy)') {
+            when {
+                expression {
+                    return params.DESTROY
+                }
+            }
+            steps {
+                script {
+                    sh """
+                        terraform plan -var-file=terraform-${TF_ENV}.json -destroy -out=tf-destroy-plan
+                    """
+                }
+            }
+        }
+
         stage('Destroy Confirmation') {
             when {
                 expression {
@@ -117,7 +157,7 @@ pipeline {
                 withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     script {
                         sh """
-                            terraform destroy -var-file=terraform-${TF_ENV}.json -auto-approve
+                            terraform apply -auto-approve tf-destroy-plan
                         """
                     }
                 }
@@ -125,9 +165,12 @@ pipeline {
         }
     }
 
-    // post {
-    //     always {
-    //         cleanWs()
-    //     }
-    // }
+    post {
+        always {
+            // Clean up the terraform-{TF_ENV}.json file
+            sh """
+                rm -rf terraform-${TF_ENV}.json
+            """
+        }
+    }
 }
