@@ -117,7 +117,7 @@ pipeline {
                 withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     script {
                         sh """
-                            terraform destroy -var-file=terraform-${TF_ENV}.tfvars -auto-approve
+                            terraform destroy -var-file=terraform-${TF_ENV}.json -auto-approve
                         """
                     }
                 }
