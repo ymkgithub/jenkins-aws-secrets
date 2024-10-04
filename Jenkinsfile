@@ -42,7 +42,6 @@ pipeline {
                         sh """
                             terraform init
                             terraform workspace select ${TF_ENV} || terraform workspace new ${TF_ENV}
-                            terraform fmt
                             terraform validate
                         """
                     }
