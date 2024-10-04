@@ -45,7 +45,7 @@ pipeline {
                 withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     script {
                         sh """
-                            terraform init
+                            terraform init -migrate-state
                         """
                     }
                 }
