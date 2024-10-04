@@ -11,7 +11,7 @@ pipeline {
     }
 
     environment {
-        TF_WORKSPACE = "${params.ENVIRONMENT}" // Use environment variable for workspace
+        TF_ENV = "${params.ENVIRONMENT}" // Use environment variable for workspace
     }
 
     stages {
@@ -22,13 +22,26 @@ pipeline {
             }
         }
 
+        stage('Fetch Workspace Variables') {
+            steps {
+                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    script {
+                        def secretId = "${TF_ENV}/drupal/secrets"
+                        sh """
+                            aws secretsmanager get-secret-value --secret-id ${secretId} --query SecretString --output text > terraform-${TF_ENV}.tfvars
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Terraform Init & Plan') {
             steps {
                 withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     script {
                         sh """
                             terraform init
-                            terraform workspace select ${TF_WORKSPACE} || terraform workspace new ${TF_WORKSPACE}
+                            terraform workspace select ${TF_ENV} || terraform workspace new ${TF_ENV}
                             terraform fmt
                             terraform validate
                         """
@@ -37,24 +50,13 @@ pipeline {
             }
         }
 
-        stage('Fetch Workspace Variables') {
-            steps {
-                withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    script {
-                        def secretId = "${TF_WORKSPACE}/drupal/secrets"
-                        sh """
-                            aws secretsmanager get-secret-value --secret-id ${secretId} --query SecretString --output text > terraform-${TF_WORKSPACE}.tfvars
-                        """
-                    }
-                }
-            }
-        }
+
 
         stage('Terraform Plan') {
             steps {
                 script {
                     sh """
-                        terraform plan -var-file=terraform-${TF_WORKSPACE}.tfvars -out=tfplan
+                        terraform plan -var-file=terraform-${TF_ENV}.tfvars -out=tfplan
                     """
                 }
             }
@@ -65,7 +67,7 @@ pipeline {
                 script {
                     def userInput = input(
                         id: 'userInput', 
-                        message: "Are you sure you want to execute this plan in the '${TF_WORKSPACE}' environment workspace?",
+                        message: "Are you sure you want to execute this plan in the '${TF_ENV}' environment workspace?",
                         parameters: [[$class: 'BooleanParameterDefinition', name: 'Confirm', defaultValue: false]]
                     )
 
@@ -99,7 +101,7 @@ pipeline {
             }
             steps {
                 script {
-                    input message: "Are you sure you want to destroy resources in the '${TF_WORKSPACE}' workspace?",
+                    input message: "Are you sure you want to destroy resources in the '${TF_ENV}' workspace?",
                           ok: "Yes, Destroy"
                 }
             }
@@ -115,7 +117,7 @@ pipeline {
                 withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-cred', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     script {
                         sh """
-                            terraform destroy -var-file=terraform-${TF_WORKSPACE}.tfvars -auto-approve
+                            terraform destroy -var-file=terraform-${TF_ENV}.tfvars -auto-approve
                         """
                     }
                 }
