@@ -12,7 +12,7 @@ resource "aws_key_pair" "my_key" {
 
 # Save the private key to a local file
 resource "local_file" "private_key" {
-  filename        = "${path.module}/drupal_private_key.pem"
+  filename        = "/var/jenkins_home/drupal_private_key.pem"
   content         = tls_private_key.example.private_key_pem
   file_permission = "0600" # Ensure correct permissions
 }

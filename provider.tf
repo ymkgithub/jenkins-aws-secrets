@@ -11,9 +11,9 @@ terraform {
       version = "~> 5.49"
     }
   }
-#   backend "s3" {
-#     bucket = "mahesh-cw-todo-app"
-#     key    = "mahesh_drupal_eks"
-#     region = "us-west-2"
-#   }
+  backend "s3" {
+    bucket = "mahesh-cw-todo-app"
+    key    = "mahesh-aws-secrets/${terraform.workspace}/terraform.tfstate"
+    region = "us-west-2"
+  }
 }
