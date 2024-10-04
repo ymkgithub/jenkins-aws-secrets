@@ -55,7 +55,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                        terraform plan
+                        terraform plan -var-file=terraform-${TF_ENV}.json
                         terraform plan -var-file=terraform-${TF_ENV}.json -out=tfplan
                     """
                 }
